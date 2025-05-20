@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Calculator</title>
+<style>
+  :root {
+    --primary-color: #005f73;
+    --secondary-color: #0a9396;
+    --accent-color: #94d2bd;
+    --background-color: #e9d8a6;
+    --button-shadow: rgba(0, 0, 0, 0.2);
+  }
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    background: var(--background-color);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+  }
+  .calculator {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 10px 20px var(--button-shadow);
+    width: 320px;
+    padding: 20px;
+  }
+  .display {
+    background: var(--primary-color);
+    color: white;
+    font-size: 2.5rem;
+    padding: 15px 20px;
+    border-radius: 10px;
+    text-align: right;
+    user-select: none;
+    min-height: 60px;
+    overflow-x: auto;
+  }
+  .buttons {
+    margin-top: 20px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-gap: 12px;
+  }
+  button {
+    background: var(--secondary-color);
+    border: none;
+    border-radius: 10px;
+    font-size: 1.5rem;
+    color: white;
+    cursor: pointer;
+    box-shadow: 0 5px 10px var(--button-shadow);
+    transition: background 0.3s ease;
+    padding: 18px 0;
+  }
+  button.operator {
+    background: var(--accent-color);
+    color: var(--primary-color);
+  }
+  button:hover {
+    filter: brightness(110%);
+  }
+  button:active {
+    transform: scale(0.95);
+  }
+  button.span-two {
+    grid-column: span 2;
+  }
+</style>
+</head>
+<body>
+  <div class="calculator" role="application" aria-label="Calculator">
+    <div class="display" id="display" aria-live="polite" aria-atomic="true">0</div>
+    <div class="buttons">
+      <button class="operator" data-action="clear" aria-label="Clear">C</button>
+      <button class="operator" data-action="backspace" aria-label="Backspace">⌫</button>
+      <button class="operator" data-action="divide" aria-label="Divide">÷</button>
+      <button class="operator" data-action="multiply" aria-label="Multiply">×</button>
+
+      <button data-digit="7" aria-label="7">7</button>
+      <button data-digit="8" aria-label="8">8</button>
+      <button data-digit="9" aria-label="9">9</button>
+      <button class="operator" data-action="subtract" aria-label="Subtract">−</button>
+
+      <button data-digit="4" aria-label="4">4</button>
+      <button data-digit="5" aria-label="5">5</button>
+      <button data-digit="6" aria-label="6">6</button>
+      <button class="operator" data-action="add" aria-label="Add">+</button>
+
+      <button data-digit="1" aria-label="1">1</button>
+      <button data-digit="2" aria-label="2">2</button>
+      <button data-digit="3" aria-label="3">3</button>
+      <button class="operator" data-action="equals" aria-label="Equals" style="height: 100%;">=</button>
+
+      <button data-digit="0" class="span-two" aria-label="0">0</button>
+      <button data-digit="." aria-label="Decimal point">.</button>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      const display = document.getElementById('display');
+      let currentInput = '0';
+      let previousInput = null;
+      let operator = null;
+      let resetNext = false;
+
+      function updateDisplay() {
+        display.textContent = currentInput;
+      }
+
+      function clearAll() {
+        currentInput = '0';
+        previousInput = null;
+        operator = null;
+        resetNext = false;
+        updateDisplay();
+      }
+
+      function backspace() {
+        if (resetNext) return; // Don't allow backspace after equals
+        if (currentInput.length > 1) {
+          currentInput = currentInput.slice(0, -1);
+        } else {
+          currentInput = '0';
+        }
+        updateDisplay();
+      }
+
+      function inputDigit(digit) {
+        if (resetNext) {
+          currentInput = digit === '.' ? '0.' : digit;
+          resetNext = false;
+          updateDisplay();
+          return;
+        }
+        if (digit === '.') {
+          if (!currentInput.includes('.')) {
+            currentInput += '.';
+          }
+          updateDisplay();
+          return;
+        }
+        if (currentInput === '0') {
+          currentInput = digit;
+        } else {
+          currentInput += digit;
+        }
+        updateDisplay();
+      }
+
+      function calculate() {
+        if (previousInput === null || operator === null) return;
+        let num1 = parseFloat(previousInput);
+        let num2 = parseFloat(currentInput);
+        let result = 0;
+        switch (operator) {
+          case 'add': result = num1 + num2; break;
+          case 'subtract': result = num1 - num2; break;
+          case 'multiply': result = num1 * num2; break;
+          case 'divide': 
+            if (num2 === 0) {
+              alert("Error: Division by zero");
+              clearAll();
+              return;
+            }
+            result = num1 / num2;
+            break;
+          default:
+            return;
+        }
+        currentInput = String(result);
+        previousInput = null;
+        operator = null;
+        resetNext = true;
+      }
+
+      function handleOperator(action) {
+        if (action === 'clear') {
+          clearAll();
+          return;
+        }
+        if (action === 'backspace') {
+          backspace();
+          return;
+        }
+        if (action === 'equals') {
+          calculate();
+          updateDisplay();
+          return;
+        }
+
+        // If already have a previous input & operator, calculate intermediate
+        if (operator && !resetNext) {
+          calculate();
+          updateDisplay();
+        }
+        previousInput = currentInput;
+        operator = action;
+        resetNext = true;
+      }
+
+      document.querySelectorAll('button').forEach(button => {
+        button.addEventListener('click', () => {
+          if (button.hasAttribute('data-digit')) {
+            inputDigit(button.getAttribute('data-digit'));
+          } else if (button.hasAttribute('data-action')) {
+            handleOperator(button.getAttribute('data-action'));
+          }
+        });
+      });
+
+      clearAll();
+    })();
+  </script>
+</body>
+</html>
+
